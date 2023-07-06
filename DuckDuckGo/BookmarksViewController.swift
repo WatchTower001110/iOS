@@ -83,7 +83,7 @@ class BookmarksViewController: UIViewController, UITableViewDelegate {
 
     private var bookmarksMenu: UIMenu {
         return UIMenu(title: UserText.importExportBookmarksTitle,
-                      children: [exportAction(), importAction()])
+                      children: [exportAction(), importAction(), refreshFaviconsAction()])
     }
 
     private var searchController: UISearchController?
@@ -574,6 +574,40 @@ class BookmarksViewController: UIViewController, UITableViewDelegate {
                         image: UIImage(named: Constants.importBookmarkImage)
         ) { [weak self] _ in
             self?.presentDocumentPicker()
+        }
+    }
+
+    func refreshFaviconsAction() -> UIAction {
+        return UIAction(title: "Refresh Favicons", image: UIImage(systemName: "refersh")) { [weak self] _ in
+            self?.refreshFavicons()
+        }
+    }
+
+    func refreshFavicons() {
+        Task {
+            let favicons = Favicons.shared
+            let model = FavoritesListViewModel(bookmarksDatabase: bookmarksDatabase)
+
+            for bookmark in model.favorites {
+                if let bookmarkURL = bookmark.urlObject,
+                   let host = bookmarkURL.host,
+                   let url = URL(string: "https://external-content.duckduckgo.com/ip3/\(host).ico") {
+                    let request = URLRequest(url: url)
+                    do {
+                        let result = try await URLSession.shared.data(for: request)
+                        guard let statusCode = (result.1 as? HTTPURLResponse)?.statusCode,
+                              (200 ..< 300).contains(statusCode),
+                                let image = UIImage(data: result.0) else { continue }
+
+                        favicons.replaceFireproofFavicon(forDomain: host, withImage: image)
+
+                    } catch {
+                        print("ERROR", error.localizedDescription)
+                    }
+                }
+            }
+
+            print("FETCH favicons done")
         }
     }
 

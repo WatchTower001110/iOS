@@ -234,13 +234,16 @@ class TabManager {
     func save() {
         model.save()
     }
+
+    var tabClearing = TabViewController.TabClearing()
     
     func prepareAllTabsExceptCurrentForDataClearing() {
-        tabControllerCache.filter { $0 != current }.forEach { $0.prepareForDataClearing() }
+        tabClearing = TabViewController.TabClearing()
+        tabControllerCache.filter { $0 != self.current }.forEach { $0.prepareForDataClearing(clearing: tabClearing) }
     }
     
-    func prepareCurrentTabForDataClearing() {
-        current?.prepareForDataClearing()
+    func prepareCurrentTabForDataClearing(completion: @escaping () -> Void) {
+        self.current?.prepareForDataClearing(clearing: tabClearing, completion: completion)
     }
 
     func cleanupTabsFaviconCache() {

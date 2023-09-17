@@ -1910,16 +1910,18 @@ extension MainViewController: AutoClearWorker {
         Pixel.fire(pixel: .forgetAllExecuted)
         
         self.tabCountInfo = tabManager.makeTabCountInfo()
-        
+        self.stopAllOngoingDownloads()
+
         tabManager.prepareAllTabsExceptCurrentForDataClearing()
         
         fireButtonAnimator.animate {
-            self.tabManager.prepareCurrentTabForDataClearing()
-            
-            self.stopAllOngoingDownloads()
-            self.forgetData()
-            DaxDialogs.shared.resumeRegularFlow()
-            self.forgetTabs()
+            self.tabManager.prepareCurrentTabForDataClearing {
+                print("*** current tab finished loading", self.tabManager.current?.webView.url?.absoluteString ?? "nil")
+                self.tabManager.removeAll()
+                self.forgetData()
+                DaxDialogs.shared.resumeRegularFlow()
+                self.forgetTabs()
+            }
         } onTransitionCompleted: {
             ActionMessageView.present(message: UserText.actionForgetAllDone)
             transitionCompletion?()

@@ -498,14 +498,38 @@ class TabViewController: UIViewController {
             self?.load(urlRequest: .userInitiated(url))
         })
     }
-    
-    func prepareForDataClearing() {
-        webView.navigationDelegate = nil
+
+    class TabClearing: NSObject, WKNavigationDelegate {
+
+        var count = 0
+
+        var done: (() -> Void)?
+
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+            Swift.print("***", #function)
+            return .allow
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            Swift.print("***", #function, webView.url)
+            count -= 1
+            if count <= 0 {
+                done?()
+            }
+        }
+    }
+
+    func prepareForDataClearing(clearing: TabClearing, completion: (() -> Void)? = nil) {
+        clearing.count += 1
+        webView.navigationDelegate = clearing
         webView.uiDelegate = nil
         delegate = nil
-        
-        webView.stopLoading()
-        webView.loadHTMLString("", baseURL: nil)
+
+        clearing.done = completion
+        webView.load(URLRequest(url: URL(string: "about:blank")!))
+//        webView.stopLoading()
+//        webView.loadHTMLString("", baseURL: nil)
+
     }
     
     private func load(urlRequest: URLRequest) {
